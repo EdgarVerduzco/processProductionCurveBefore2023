@@ -141,7 +141,7 @@ const email_template_success = `
     <div class="container">
         <div class="content">
             <p class="greeting">Estimado(a) <span class="highlight">Usuario</span>,</p>
-            <p class="message">Nuestro sistema de inteligencia artificial ha completado la generaion del CSV de la semana actual.</p>
+            <p class="message">Nuestro sistema de inteligencia artificial ha completado la insercion de las proyecciones previo al 2023.</p>
             
             <p class="error-heading"><span class="highlight">Este es el resultado:</span></p>
             {{messageResult}}

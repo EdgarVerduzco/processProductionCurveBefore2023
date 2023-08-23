@@ -23,7 +23,7 @@ AWS.config.update({
 async function process_curve_production_before_2023() {
     const errorMessages = [];
     try {
-        const filePath = path.join(__dirname, 'before2023.csv');
+        const filePath = path.join(__dirname, 'before2023_resume.csv');
         const dataArray = await readCsvFile(filePath);
 
         const pool = await connectToDatabase(databases.db_Aws)
@@ -54,7 +54,7 @@ async function process_curve_production_before_2023() {
         }
 
         await pool.close();
-        await sendReturnEmail(errorMessages, false);
+        await sendReturnEmail(errorMessages, true);
 
     } catch (error) {
         console.log(error);
@@ -325,10 +325,9 @@ async function insertDateRecordIfNotExists(pool, id, data) {
         if (!existingRecord) {
             await executeDateInsertQuery(pool, id, data);
         } else {
-            console.log(`Date record already exists for ID ${id} and date ${data.Semana}`);
+            throw new Error(`Date record already exists for ID ${id} and date ${data.Semana}, and amount: ${data.Cajas_proyectadas}`);
         }
     } catch (error) {
-        console.error("Error inserting date record:", error);
         throw error;
     }
 }
@@ -384,7 +383,7 @@ async function sendReturnEmail(errorMessages, isSuccess, isHtml = true) {
             },
             Message: {
                 Subject: {
-                    Data: isSuccess ? MESSAGES.SUCCESS.GENERATE_CSV : MESSAGES.ERROR.GENERATE_CSV,
+                    Data: isSuccess ? env_messages.SUCCESS.GENERATE_CSV : env_messages.ERROR.GENERATE_CSV,
                 },
                 Body: {
                     [isHtml ? 'Html' : 'Text']: {

@@ -2,8 +2,9 @@
   "name": "processproductioncurvebefore2023",
   "version": "1.0.0",
   "description": "ingresar a la bd las proyecciones previas a 2023",
-  "main": "handler.js",
+  "main": "process_curve_production.js",
   "scripts": {
+    "start": "nodemon --exec sls offline",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -18,6 +19,12 @@
   "homepage": "https://github.com/EdgarVerduzco/processProductionCurveBefore2023#readme",
   "dependencies": {
     "aws-sdk": "^2.1442.0",
+    "csv-parser": "^3.0.0",
     "mssql": "^9.1.3"
+  },
+  "devDependencies": {
+    "serverless-offline": "^12.0.4",
+    "serverless-plugin-include-dependencies": "^5.1.0",
+    "serverless-prune-plugin": "^2.0.2"
   }
 }

@@ -10,7 +10,7 @@ const env_messages = require('./env_messages');
  */
 async function connectToDatabase(databaseInfo) {
     try {
-        const secretsManagerClient = new secretsManager();
+        const secretsManagerClient = new secretsManager({region: env.REGION});
 
         const secretResponse = await secretsManagerClient.getSecretValue({
             SecretId: databaseInfo.secretName

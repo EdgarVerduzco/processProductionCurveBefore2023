@@ -5,6 +5,14 @@ const csvParser = require('csv-parser');
 const env = require("./env");
 const {databases, connectToDatabase} = require("./Conection")
 const sql = require('mssql');
+const AWS = require('aws-sdk');
+const awsConfig = require('./aws-config.json');
+const env_messages = require('./env_messages');
+AWS.config.update({
+    accessKeyId: awsConfig.ACCESS_KEY_ID,
+    secretAccessKey: awsConfig.SECRET_ACCESS_KEY,
+    region: awsConfig.REGION
+});
 
 /**
  * Serverless function to process a CSV file named 'before2023.csv' and transform its contents into an array.
@@ -13,6 +21,7 @@ const sql = require('mssql');
  * @returns {object} - The response object containing the transformed data and event input.
  */
 async function process_curve_production_before_2023() {
+    const errorMessages = [];
     try {
         const filePath = path.join(__dirname, 'before2023.csv');
         const dataArray = await readCsvFile(filePath);
@@ -20,26 +29,38 @@ async function process_curve_production_before_2023() {
         const pool = await connectToDatabase(databases.db_Aws)
 
         for (let i = 0; i < dataArray.length; i++) {
-            const data = dataArray[i];
-            console.log(`Processing entry ${i + 1} out of ${dataArray.length}`);
+            try {
+                const data = dataArray[i];
+                console.log(`Processing entry ${i + 1} out of ${dataArray.length}`);
 
-            let existingId = null;
-            const verifyResult = await executeVerifyQuery(pool, data);
+                let existingId = null;
+                const verifyResult = await executeVerifyQuery(pool, data);
 
-            if (!verifyResult) {
-                const insertedId = await executeInsertQuery(pool, data);
-                existingId = insertedId;
-            } else {
-                existingId = verifyResult.id;
+                if (!verifyResult) {
+                    const insertedId = await executeInsertQuery(pool, data);
+                    existingId = insertedId;
+                } else {
+                    existingId = verifyResult.id;
+                }
+
+                await insertDateRecordIfNotExists(pool, existingId, data);
+            } catch (error) {
+                if (error.message.includes("Date record already exists")) {
+                    errorMessages.push(`Entry ${i + 1}: ${error.message}`);
+                } else {
+                    errorMessages.push(`Error processing entry ${i + 1}: ${error.message}`);
+                }
             }
-
-            await insertDateRecordIfNotExists(pool, existingId, data);
         }
 
         await pool.close();
+        await sendReturnEmail(errorMessages, false);
 
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        errorMessages.push(`General processing error: ${error.message}`);
+        // Enviar correo con los mensajes de error (si existen)
+        await sendReturnEmail(errorMessages, false);
     }
 };
 
@@ -335,6 +356,49 @@ async function checkExistingDateRecord(pool, id, data) {
         throw error;
     }
 }
+
+/**
+ * Send an error email to the sender
+ * @param {string} message - Error message to include in the email body
+ * @param {boolean} isSuccess - Subject of the email
+ * @param {boolean} isHtml - Whether the message body is in HTML format
+ * @returns {Promise} - A promise that resolves when the email is sent
+ */
+async function sendReturnEmail(errorMessages, isSuccess, isHtml = true) {
+    const errorMessageHTML = errorMessages.map(error => `<p class="error-message">${error}</p>`).join("");
+
+    const html = env.HTML.HTML
+        .replace('{{styles_email_complete}}', env.HTML.STYLES)
+        .replace('{{fullYear}}', new Date().getFullYear())
+        .replace('{{messageResult}}', errorMessageHTML);
+
+    try {
+        const ses = new AWS.SES();
+
+        const toAddresses = [env.EMAILS.EDGAR];
+
+        await ses.sendEmail({
+            Source: env.EMAILS.AWS,
+            Destination: {
+                ToAddresses: toAddresses,
+            },
+            Message: {
+                Subject: {
+                    Data: isSuccess ? MESSAGES.SUCCESS.GENERATE_CSV : MESSAGES.ERROR.GENERATE_CSV,
+                },
+                Body: {
+                    [isHtml ? 'Html' : 'Text']: {
+                        Data: html,
+                    },
+                },
+            },
+        }).promise();
+    } catch (error) {
+        console.error(env_messages.ERROR.ERROR_SENDING_SUCCESS_EMAIL + error);
+        throw new Error(env_messages.ERROR.ERROR_SENDING_SUCCESS_EMAIL + error);
+    }
+}
+
 
 // Execute the main command
 process_curve_production_before_2023();

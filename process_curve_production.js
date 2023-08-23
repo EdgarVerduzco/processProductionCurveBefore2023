@@ -23,7 +23,7 @@ AWS.config.update({
 async function process_curve_production_before_2023() {
     const errorMessages = [];
     try {
-        const filePath = path.join(__dirname, 'before2023_resume.csv');
+        const filePath = path.join(__dirname, 'before2023.csv');
         const dataArray = await readCsvFile(filePath);
 
         const pool = await connectToDatabase(databases.db_Aws)

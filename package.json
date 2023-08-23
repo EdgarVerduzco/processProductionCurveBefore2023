@@ -1,0 +1,19 @@
+{
+  "name": "processproductioncurvebefore2023",
+  "version": "1.0.0",
+  "description": "ingresar a la bd las proyecciones previas a 2023",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EdgarVerduzco/processProductionCurveBefore2023.git"
+  },
+  "author": "Edgar Verduzco",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/EdgarVerduzco/processProductionCurveBefore2023/issues"
+  },
+  "homepage": "https://github.com/EdgarVerduzco/processProductionCurveBefore2023#readme"
+}
